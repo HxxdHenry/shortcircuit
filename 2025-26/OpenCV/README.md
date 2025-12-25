@@ -24,7 +24,7 @@ A collection of student OpenCV projects.
 > Submit a **Pull Request** using the OpenCV template 🚀
 
 ## 📥 Submitting a Project
-1. Fork the repo
+1. Fork the base repo
 2. Open a PR using the template
 3. Add the correct `concept:*` label
 4. Wait for review & merge
