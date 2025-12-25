@@ -1,0 +1,68 @@
+ name: Validate Project Submission
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body;
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+
+            if (!labels.some(l => l.startsWith("concept:"))) {
+              throw new Error("Missing concept label (e.g., concept:opencv)");
+            }
+
+            // Extract checked concepts from checkbox list
+            const conceptSection = body.match(/<!-- CONCEPT -->[\s\S]*?<!-- CONCEPT_END -->/);
+            if (!conceptSection) {
+              throw new Error("Concept section missing");
+            }
+
+            const checkedConcepts = [...conceptSection[0].matchAll(/- \[x\] (.+)/gi)]
+              .map(m => m[1].trim().toLowerCase());
+
+            if (checkedConcepts.length !== 1) {
+              throw new Error("Exactly ONE concept must be selected");
+            }
+
+            // Extract concept label
+            const conceptLabels = labels
+              .filter(l => l.startsWith("concept:"))
+              .map(l => l.split(":")[1]);
+
+            if (conceptLabels.length !== 1) {
+              throw new Error("Exactly ONE concept label must be applied");
+            }
+
+            if (checkedConcepts[0] !== conceptLabels[0]) {
+              throw new Error(
+                `Concept mismatch: checkbox=${checkedConcepts[0]}, label=${conceptLabels[0]}`
+              );
+            }
+
+            function extract(tag) {
+              const r = new RegExp(`<!-- ${tag} -->[\\s\\S]*?\\n([\\s\\S]*?)\\n<!-- ${tag}_END -->`);
+              const m = body.match(r);
+              return m ? m[1].trim() : "";
+            }
+
+            const required = ["PROJECT_TITLE", "REPO_URL", "DESCRIPTION", "AUTHOR"];
+            for (const f of required) {
+              if (!extract(f)) {
+                throw new Error(`Missing field: ${f}`);
+              }
+            }
+
+            const repoUrl = extract("REPO_URL");
+            const [, owner, repo] = repoUrl.match(/github\.com\/(.+?)\/(.+?)(\.git)?$/) || [];
+            if (!owner || !repo) throw new Error("Invalid GitHub repo URL");
+
+            const res = await github.rest.repos.get({ owner, repo });
+            if (res.data.private) throw new Error("Repository must be public");

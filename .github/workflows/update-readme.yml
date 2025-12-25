@@ -1,0 +1,122 @@
+name: Update Concept README
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-readme:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect concept
+        id: concept
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const conceptLabel = labels.find(l => l.startsWith("concept:"));
+            if (!conceptLabel) throw new Error("No concept label found");
+            core.setOutput("concept", conceptLabel.split(":")[1]);
+
+      - name: Parse PR body
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body;
+            function extract(tag) {
+              const r = new RegExp(`<!-- ${tag} -->[\\s\\S]*?\\n([\\s\\S]*?)\\n<!-- ${tag}_END -->`);
+              const m = body.match(r);
+              return m ? m[1].trim() : "";
+            }
+            const data = {
+              title: extract("PROJECT_TITLE"),
+              repo: extract("REPO_URL"),
+              desc: extract("DESCRIPTION").replace(/\n/g, " "),
+              author: extract("AUTHOR").replace("@", "")
+            };
+            for (const [k, v] of Object.entries(data)) {
+              if (!v) throw new Error(`Missing field: ${k}`);
+            }
+            core.setOutput("title", data.title);
+            core.setOutput("repo", data.repo);
+            core.setOutput("desc", data.desc);
+            core.setOutput("author", data.author);
+
+      - name: Update README
+        run: |
+          CONCEPT="${{ steps.concept.outputs.concept }}"
+          README="2025-26/${CONCEPT^}/README.md"
+          ROW="| ${{ steps.parse.outputs.title }} | [@${{ steps.parse.outputs.author }}](${{ steps.parse.outputs.repo }}) | ${{ steps.parse.outputs.desc }} |"
+
+          grep -q "${{ steps.parse.outputs.repo }}" "$README" && exit 1
+
+          awk '
+          /AUTO-GENERATED-START/ { print; print row; next }
+          /AUTO-GENERATED-END/ { print; next }
+          { print }
+          ' row="$ROW" "$README" > tmp.md
+
+          mv tmp.md "$README"
+
+      - name: Sort table
+        run: |
+          awk '
+          /AUTO-GENERATED-START/ {
+            print
+            getline
+            while ($0 !~ /AUTO-GENERATED-END/) {
+              match($0, /\[@([^]]+)\]/, a)
+              match($0, /\| ([^|]+) \|/, p)
+              key = a[1] "|" p[1]
+              rows[key] = $0
+              getline
+            }
+            n = asorti(rows, sorted)
+            for (i=1; i<=n; i++) print rows[sorted[i]]
+            print
+            next
+          }
+          { print }
+          ' "$README" > sorted.md
+
+          mv sorted.md "$README"
+
+      - name: Update Contributors
+        run: |
+          awk '
+          {
+            if (match($0, /\[@([^]]+)\]/, a)) count[a[1]]++
+            lines[++n] = $0
+          }
+          /CONTRIBUTORS-START/ {
+            print
+            for (a in count) {
+              key = sprintf("%05d|%s", 99999 - count[a], a)
+              order[key] = a
+            }
+            nkeys = asorti(order, sorted)
+            for (i = 1; i <= nkeys; i++) {
+              user = order[sorted[i]]
+              print "- @" user " — " count[user] " project(s)"
+            }
+            skip = 1
+            next
+          }
+          /CONTRIBUTORS-END/ { print; skip = 0; next }
+          !skip { print }
+          ' "$README" > final.md
+
+          mv final.md "$README"
+
+      - name: Commit changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add "$README"
+          git commit -m "Add ${{ steps.concept.outputs.concept }} project: ${{ steps.parse.outputs.title }}"
+          git push
