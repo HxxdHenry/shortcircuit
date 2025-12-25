@@ -1,11 +1,18 @@
- name: Validate Project Submission
+name: Validate Project Submission
 
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    types:
+      - opened
+      - edited
+      - synchronize
+      - labeled
+      - unlabeled
+      - ready_for_review
 
 jobs:
   validate:
+    name: Validate Project Submission
     runs-on: ubuntu-latest
 
     steps:
