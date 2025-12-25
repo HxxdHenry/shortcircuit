@@ -12,6 +12,7 @@ on:
 
 jobs:
   validate:
+    name: Validate Project Submission
     runs-on: ubuntu-latest
 
     steps:
