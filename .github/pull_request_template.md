@@ -2,7 +2,7 @@
 
 <!-- CONCEPT -->
 **Concept (choose one):**
-- [] OpenCV
+- [ ] OpenCV
 <!-- CONCEPT_END -->
 
 ---
@@ -34,7 +34,7 @@
 ---
 
 ### 🔹 Checklist
-- [] Repository is public
-- [] README exists
-- [] Codebase well-commented
-- [] Showcase Video exists
+- [ ] Repository is public
+- [ ] README exists
+- [ ] Codebase well-commented
+- [ ] Showcase Video exists
