@@ -29,18 +29,6 @@ This repository is **not just a list of links** — it’s a **living knowledge 
 
 ---
 
-## 👥 Club Coordinators (2025–26)
-
-*(Primary student leadership – first point of contact)*
-
-| Name | Contact |
-|----|----|
-| Akshat Mehta | +91 95215 93891 |
-| Dhruv Gupta | +91 80056 81519 |
-| Utkarsh Kumar | +91 88405 66896 |
-
----
-
 ## 🤝 Submissions
 
 We welcome **all LNMIIT students** to contribute.
@@ -62,6 +50,7 @@ To submit a project:
 - **Phoenix Club, LNMIIT**
 - 📍 Jaipur, Rajasthan
 - 🌐 Instagram: https://www.instagram.com/phoenix.lnmiit/
+- 📧 Email: phoenixclub@lnmiit.ac.in
 
 ---
 
